@@ -1,1 +1,1 @@
-__all__ = ["influxdb"]
+__all__ = ["influxdb", "sqlite"]
