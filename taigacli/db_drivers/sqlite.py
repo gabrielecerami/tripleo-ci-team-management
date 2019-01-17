@@ -60,8 +60,8 @@ class Table(object):
 
 class Storage(object):
 
-    def __init__(self, config, timestamp):
-        self.timestamp = timestamp
+    def __init__(self, config):
+        self.timestamp = config.timestamp
         self.config = config
         self.file=config.db_options.get('file', ':memory:')
         self.tables = {}

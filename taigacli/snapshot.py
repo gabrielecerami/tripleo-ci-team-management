@@ -1,59 +1,14 @@
-# - s sprint (default: current)
-import argparse
-import configparser
 import datetime
 import logging
 import os
 import pickle
 import pprint
 import taiga
-import sys
-from db_drivers import *
-from queries import Queries
-
-class SnapshotException(Exception):
-    pass
-
-class Configuration(object):
-
-    def __init__(self, config_file):
-        self.relevant_attr = {}
-        parser = configparser.ConfigParser(allow_no_value=True)
-        parser.read(config_file)
-        self.project_slug = parser['project']['slug']
-        self.scope = parser['main']['scope']
-        self.db_driver = parser['main']['db-driver']
-        self.db_parameters = {}
-        self.db_options = {}
-        self.main_elements = parser['project']['elements'].split(',')
-        for element in self.main_elements:
-            self.db_parameters[element] =  parser[element+':'+self.db_driver]
-        try:
-            self.db_options = parser['db:' + self.db_driver]
-        except KeyError:
-            pass
-        if self.db_driver == "influxdb":
-            self.db_storage = influxdb.Storage(self)
-        elif self.db_driver == "sqlite":
-            self.db_storage = sqlite.Storage(self, 12334)
-        else:
-            raise SnapshotException("DB driver not supported")
-
-    def parse_arguments(self, arguments):
-        self.parser = argparse.ArgumentParser(description='Taiga Board Snapshot utility')
-        subparser = self.parser.add_subparsers()
-        snapshot_parser = subparser.add_parser('snapshot', help='make a snapshot')
-        snapshot_parser.set_defaults(handler=get_snapshot)
-        query_parser = subparser.add_parser('query', help='query the snapshot database')
-        query_parser.set_defaults(handler=run_queries)
-        args = self.parser.parse_args(arguments)
-        return args
-
-
+from taigacli.exceptions import *
 
 class TaigaSnapshot(object):
 
-    def __init__(self, config, db_storage):
+    def __init__(self, config):
         # Taiga properties
         self.date_format = "%Y-%m-%d"
         username = os.environ.get('TAIGA_USERNAME', None)
@@ -75,10 +30,21 @@ class TaigaSnapshot(object):
 
         self.project = self.api.projects.get_by_slug(self.config.project_slug)
 
+        self.epic_statuses = {}
+        self.epic_attributes = {}
         self.task_statuses = {}
         self.task_attributes = {}
         self.user_story_attributes = {}
         self.user_story_statuses = {}
+
+        # No support for epics in taiga module
+        #epic_statuses_objects = self.project.epic_statuses
+        #for epic_status in epic_statuses_objects:
+        #    self.epic_statuses[str(epic_status.id)] = epic_status.name
+
+        #epic_attributes_objects = self.project.epic_custom_attributes
+        #for epic_attribute in epic_attributes_objects:
+        #    self.epic_attributes[str(epic_attribute.id)] = epic_attribute.name
 
         task_statuses_objects = self.project.list_task_statuses()
         for task_status in task_statuses_objects:
@@ -109,8 +75,11 @@ class TaigaSnapshot(object):
                 start_date = datetime.datetime.strptime(sprint.estimated_start,
                     self.date_format)
                 end_date = datetime.datetime.strptime(sprint.estimated_finish,
-                    self.date_format)
-                if current_date < end_date and current_date > start_date:
+                    self.date_format).replace(hour=23, minute=59)
+                logging.debug(pprint.pformat(current_date))
+                logging.debug(pprint.pformat(start_date))
+                logging.debug(pprint.pformat(end_date))
+                if current_date <= end_date and current_date >= start_date:
                     self.current_sprint = sprint
                     break
 
@@ -169,39 +138,5 @@ class TaigaSnapshot(object):
 
     def dump(self):
         #logging.debug(pprint.pformat(self.__dict__))
-        self.db_storage.dump(self)
+        self.config.db_storage.dump(self)
 
-
-def get_snapshot(config, args):
-    try:
-        with open('fixtures.pik', 'rb') as pickle_file:
-            logging.warning("Fixture file found, loading snapshot from file")
-            snapper = pickle.load(pickle_file)
-            timestamp = datetime.datetime.now().timestamp()
-            snapper.db_storage = sqlite.Storage(config, timestamp)
-    except FileNotFoundError:
-        snapper = TaigaSnapshot(config, db_storage)
-        snapper.gather()
-
-    ## Uncomment to create fixture
-    # snapper.dump_pickle()
-
-    snapper.dump()
-
-def run_queries(config, args):
-    queries = Queries(config)
-    queries.query_methods['query_unfinished_tasks_by_snapshot']()
-
-def main():
-    # Read conf
-
-    logging.basicConfig(level=logging.DEBUG)
-    config_file = 'config.ini'
-    config = Configuration(config_file)
-    args = config.parse_arguments(sys.argv[1:])
-    args.handler(config, args)
-
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
