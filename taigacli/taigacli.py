@@ -54,6 +54,8 @@ class Configuration(object):
 
         snapshot_parser = main_subparser.add_parser('snapshot', help='Handle local snapshots')
         snapshot_subparser = snapshot_parser.add_subparsers()
+        snapshot_click_parser = snapshot_subparser.add_parser('click', help='Take a snapshot')
+        snapshot_click_parser.set_defaults(handler=get_snapshot)
         snapshot_list_parser = snapshot_subparser.add_parser('list', help='list stored snapshots')
         snapshot_list_parser.set_defaults(handler=list_snapshots)
 
@@ -92,6 +94,7 @@ def get_snapshot(config, args):
             snapper.db_storage = sqlite.Storage(config, timestamp)
     except FileNotFoundError:
         snapper = TaigaSnapshot(config)
+        #snapper.get_epics()
         snapper.gather()
 
     ## Uncomment to create fixture

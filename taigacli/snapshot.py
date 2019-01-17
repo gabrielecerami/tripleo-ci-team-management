@@ -3,6 +3,7 @@ import logging
 import os
 import pickle
 import pprint
+import requests
 import taiga
 from taigacli.exceptions import *
 
@@ -37,6 +38,30 @@ class TaigaSnapshot(object):
         self.user_story_attributes = {}
         self.user_story_statuses = {}
 
+    def get_epics(self):
+        headers = {
+            'Authorization': "Bearer {}".format(self.api.token)
+        }
+        response = requests.get(self.api.host, headers=headers)
+        pprint.pprint(response.json())
+
+    def get_current_sprint(self):
+        sprints = self.project.list_milestones()
+        current_date = datetime.datetime.today()
+        for sprint in sprints:
+            start_date = datetime.datetime.strptime(sprint.estimated_start,
+                self.date_format)
+            end_date = datetime.datetime.strptime(sprint.estimated_finish,
+                self.date_format).replace(hour=23, minute=59)
+            logging.debug(pprint.pformat(current_date))
+            logging.debug(pprint.pformat(start_date))
+            logging.debug(pprint.pformat(end_date))
+            if current_date <= end_date and current_date >= start_date:
+                self.current_sprint = sprint
+                break
+
+    def gather(self):
+        # Find Project
         # No support for epics in taiga module
         #epic_statuses_objects = self.project.epic_statuses
         #for epic_status in epic_statuses_objects:
@@ -67,24 +92,6 @@ class TaigaSnapshot(object):
         for member in members:
             self.users[member.id] = member.username
 
-
-    def get_current_sprint(self):
-            sprints = self.project.list_milestones()
-            current_date = datetime.datetime.today()
-            for sprint in sprints:
-                start_date = datetime.datetime.strptime(sprint.estimated_start,
-                    self.date_format)
-                end_date = datetime.datetime.strptime(sprint.estimated_finish,
-                    self.date_format).replace(hour=23, minute=59)
-                logging.debug(pprint.pformat(current_date))
-                logging.debug(pprint.pformat(start_date))
-                logging.debug(pprint.pformat(end_date))
-                if current_date <= end_date and current_date >= start_date:
-                    self.current_sprint = sprint
-                    break
-
-    def gather(self):
-        # Find Project
 
         # Gather basics
         if self.config.scope == 'sprint':
