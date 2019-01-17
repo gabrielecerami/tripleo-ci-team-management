@@ -42,11 +42,22 @@ class Configuration(object):
     def parse_arguments(self, arguments):
         self.parser = argparse.ArgumentParser(description='Taiga Board Snapshot utility')
         self.parser.set_defaults(handler=usage)
-        subparser = self.parser.add_subparsers()
-        snapshot_parser = subparser.add_parser('snapshot', help='make a snapshot')
-        snapshot_parser.add_argument('--list', dest='list_snapshots', action='store_true', help='list snapshots')
-        snapshot_parser.set_defaults(handler=snapshots)
-        query_parser = subparser.add_parser('query-snapshot', help='query the snapshot database')
+
+        main_subparser = self.parser.add_subparsers()
+
+        task_parser = main_subparser.add_parser('task', help='Handle task operations')
+        task_subparser = task_parser.add_subparsers()
+        task_move_parser = task_subparser.add_parser('move', help='move tasks between us')
+        task_move_parser.add_argument('task_ef', action='store', help='task to move')
+        task_move_parser.add_argument('us_ref', action='store', help='user story to move to')
+        task_move_parser.set_defaults(handler=usage)
+
+        snapshot_parser = main_subparser.add_parser('snapshot', help='Handle local snapshots')
+        snapshot_subparser = snapshot_parser.add_subparsers()
+        snapshot_list_parser = snapshot_subparser.add_parser('list', help='list stored snapshots')
+        snapshot_list_parser.set_defaults(handler=list_snapshots)
+
+        query_parser = snapshot_subparser.add_parser('query', help='query the snapshot database')
         query_parser.set_defaults(handler=run_queries)
         query_parser.add_argument('--raw-query', dest='raw_query', action='store', help='execute a raw SQL query on the database')
         query_parser.add_argument('--name', dest='query_name', action='store', help='execute a saved query')
@@ -57,6 +68,13 @@ class Configuration(object):
 
 def usage(config, args):
     config.parser.print_help()
+
+def list_snapshots(config, args):
+    queries = Queries(config)
+    queries.list_snapshots()
+
+def task_move(config, args):
+    pass
 
 def snapshots(config, args):
     if args.list_snapshots:
@@ -98,7 +116,8 @@ def run_queries(config, args):
     elif args.list_queries:
         for index, name in enumerate(queries.query_methods.keys(), 1):
             print("{}. {}".format(index, name))
-
+    else:
+        logging.warning("No queries specified")
 
 def main():
     # Read conf

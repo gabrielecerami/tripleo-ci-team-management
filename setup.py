@@ -7,6 +7,11 @@ setup(name='Tripleo CI Taiga Management tool',
       author='Gabriele Cerami',
       author_email='gcerami@redhat.com',
       packages=['taigacli'],
+      install_requires=[
+          'pandas',
+          'texttable',
+          'python-taiga',
+      ],
       entry_points={
           'console_scripts': [
               'taigacli=taigacli.taigacli:main',

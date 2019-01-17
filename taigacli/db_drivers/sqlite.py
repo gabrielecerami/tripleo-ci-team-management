@@ -1,12 +1,7 @@
 import logging
 import pprint
 import json
-
-try:
-    import sqlite3
-except ImportError:
-    # logging.error("python bindings for sqlite3 not installed")
-    pass
+import sqlite3
 
 class Row(object):
 
