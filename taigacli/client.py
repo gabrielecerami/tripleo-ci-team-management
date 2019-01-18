@@ -7,25 +7,36 @@ import taiga
 from taigacli.exceptions import *
 
 class TaigaClient(object):
+    log = logging.getLogger('taigacli')
 
     def __init__(self, config):
         # Taiga properties
         self.date_format = "%Y-%m-%d"
-        username = os.environ.get('TAIGA_USERNAME', None)
-        password = os.environ.get('TAIGA_PASSWORD', None)
         self.config = config
-        if username is None or password is None:
-            logging.error("Missing Credentials")
-            raise SnapshotException
         try:
             self.api=taiga.TaigaAPI(self.config.taiga_host)
         except AttributeError:
             self.api=taiga.TaigaAPI()
 
+
+    def _init(self):
+        ''' THis function connect to taiga an download basic elements
+        it's not part of the standard init because we don't want to connect if
+        the operations can be done just locally
+        '''
+
+        if self.api.token:
+            return
+
+        username = os.environ.get('TAIGA_USERNAME', None)
+        password = os.environ.get('TAIGA_PASSWORD', None)
+        if username is None or password is None:
+            self.log.error("Missing Credentials")
+            raise SnapshotException
         try:
             self.api.auth(username=username, password=password)
         except taiga.exceptions.TaigaRestException:
-            logging.error("Authentication Failed")
+            self.log.error("Authentication Failed")
             raise
 
         self.project = self.api.projects.get_by_slug(self.config.project_slug)
@@ -63,6 +74,7 @@ class TaigaClient(object):
         self.sprints = self.project.list_milestones()
 
     def raw_api_get(self, api_path):
+        self._init()
         headers = {
             'Authorization': "Bearer {}".format(self.api.token)
         }
@@ -71,22 +83,25 @@ class TaigaClient(object):
         return response.json()
 
     def get_epics(self):
+        self._init()
         api_path = "epics?project={}".format(self.project.id)
         epics = self.raw_api_get(api_path)
         return epics
 
     def get_sprint(self, date=datetime.datetime.today()):
+        self._init()
         for sprint in self.sprints:
             start_date = datetime.datetime.strptime(sprint.estimated_start,
                 self.date_format)
             end_date = datetime.datetime.strptime(sprint.estimated_finish,
                 self.date_format).replace(hour=23, minute=59)
-            logging.debug(pprint.pformat(date))
-            logging.debug(pprint.pformat(start_date))
-            logging.debug(pprint.pformat(end_date))
+            self.log.debug(pprint.pformat(date))
+            self.log.debug(pprint.pformat(start_date))
+            self.log.debug(pprint.pformat(end_date))
             if date <= end_date and date >= start_date:
                 break
         return sprint
 
     def get_tasks_by_us(self, us_id=None):
+        self._init()
         return self.api.tasks.list(user_story=us_id)

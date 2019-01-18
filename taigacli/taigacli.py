@@ -49,16 +49,18 @@ class Configuration(object):
 
 
         self.argparser = argparse.ArgumentParser(description='Taiga Board Snapshot utility')
-        #self.argparser.set_defaults(handler=usage)
         self.main_subparser = self.argparser.add_subparsers()
 
         self.commands = []
         self.commands.append(TaskCommand(self))
         self.commands.append(SnapshotsCommand(self))
+
+        # TODO ideas for commands/ queries
         # move unfinished issues to the next sprint
         # epics dependency graph
+        # timeline for tasks by user (over the course of time, when are the status changes.)
 
-        #self.client = TaigaClient(self)
+        self.client = TaigaClient(self)
 
     def parse_arguments(self, arguments):
         args = self.argparser.parse_args(arguments)
@@ -69,8 +71,8 @@ def usage(config, args):
 
 def main():
     # Read conf
-
-    logging.basicConfig(level=logging.DEBUG)
+    log = logging.getLogger('taigacli')
+    log.setLevel(logging.DEBUG)
     config_file = 'config.ini'
     config = Configuration(config_file)
     args = config.parse_arguments(sys.argv[1:])

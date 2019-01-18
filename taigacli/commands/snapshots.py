@@ -2,6 +2,7 @@ import logging
 from taigacli.operations.snapshot import Snapshot
 
 class SnapshotsCommand(object):
+    log = logging.getLogger('taigacli')
 
     def __init__(self, config):
         self.config = config
@@ -38,7 +39,7 @@ class SnapshotsCommand(object):
             if queries.verify_timestamp(args.timestamp):
                 timestamp = args.timestamp
             else:
-                logging.error("Timestamp {} not in database".format(args.timestamp))
+                self.log.error("Timestamp {} not in database".format(args.timestamp))
                 return
         else:
             timestamp = queries.get_latest_timestamp()
@@ -50,4 +51,4 @@ class SnapshotsCommand(object):
             for index, name in enumerate(self.config.custom_queries.user.keys(), 1):
                 print("{}. {}".format(index, name))
         else:
-            logging.warning("No queries specified")
+            self.log.warning("No queries specified")

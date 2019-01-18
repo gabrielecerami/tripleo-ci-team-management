@@ -27,12 +27,13 @@ class DataPoint(object):
         return point_dict
 
 class Storage(object):
+    log = logging.getLogger('taigacli')
 
     def __init__(self, config):
         self.config = config
         self.timestamp = datetime.datetime.now().isoformat()
         self.host = config.db_options.get('host','localhost')
-        logging.debug(self.host)
+        self.log.debug(self.host)
         self.port = config.db_options.get('port','8086')
         self.db_name = config.db_options.get('database', 'test')
         self.client = InfluxDBClient(host=self.host, port=self.port)
@@ -51,8 +52,8 @@ class Storage(object):
                 self.fields[element_name] = self.config.db_parameters[element_name]['fields'].split(',')
             except KeyError:
                 pass
-        logging.debug(pprint.pformat(self.tags))
-        logging.debug(pprint.pformat(self.fields))
+        self.log.debug(pprint.pformat(self.tags))
+        self.log.debug(pprint.pformat(self.fields))
 
     def query(self, query, date=None):
         if date is None:
@@ -79,16 +80,16 @@ class Storage(object):
                     try:
                         tags[attribute] = getattr(element, attribute)
                     except AttributeError:
-                        logging.warning("Attribute not found")
+                        self.log.warning("Attribute not found")
                 for attribute in self.fields[element_name]:
                     try:
                         fields[attribute] = getattr(element, attribute)
                     except AttributeError:
-                        logging.warning("Attribute not found")
+                        self.log.warning("Attribute not found")
 
                 self.points.append(DataPoint(measurement, self.timestamp, tags, fields).to_dict())
 
-        logging.debug(pprint.pformat(self.points))
+        self.log.debug(pprint.pformat(self.points))
         self.client.write_points(self.points)
         snap_info = [{ "measurement": "snapshots", "timestamp" : self.timestamp,
                       "tags": {}, "fields": {"sprint": snapshot.current_sprint.id}}]

@@ -8,6 +8,7 @@ import subprocess
 from taigacli.exceptions import *
 
 class Queries(object):
+    log = logging.getLogger('taigacli')
 
     def __init__(self, config):
         self.storage = config.db_storage

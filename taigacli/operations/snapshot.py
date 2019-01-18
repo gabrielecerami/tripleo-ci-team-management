@@ -5,6 +5,7 @@ import pprint
 from taigacli.exceptions import *
 
 class Snapshot(object):
+    log = logging.getLogger('taigacli')
 
     def __init__(self, config, scope='sprint'):
         self.config = config
@@ -32,6 +33,7 @@ class Snapshot(object):
                 #us.update(us.get_attributes()['attributes_values'])
                 for us_epic in us.epics:
                     self.epics.add(us_epic['id'])
+                self.log.info("collecting tasks for us #{}".format(us.ref))
                 self.tasks += self.client.get_tasks_by_us(us.id)
 
         elif self.scope == 'all':
@@ -56,6 +58,7 @@ class Snapshot(object):
                 setattr(user_story, attribute_name, attribute_value)
 
         for task in self.tasks:
+            logging.info("collecting task #{}".format(task.ref))
             task.status_name = self.client.task_statuses[str(task.status)]
             task.owner_name = self.client.users[task.owner]
             task.assigned_to_name = self.client.users.get(task.assigned_to, "")
