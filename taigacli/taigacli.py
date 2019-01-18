@@ -30,7 +30,8 @@ class Configuration(object):
         self.db_options = {}
         self.main_elements = parser['project']['elements'].split(',')
         for element in self.main_elements:
-            self.db_parameters[element] =  parser[element+':'+self.db_driver]
+            self.db_parameters[element] = parser[
+                element + ':' + self.db_driver]
         try:
             self.db_options = parser['db:' + self.db_driver]
         except KeyError:
@@ -47,10 +48,12 @@ class Configuration(object):
         else:
             raise SnapshotException("DB driver not supported")
 
-
-        self.argparser = argparse.ArgumentParser(description='Taiga Board Snapshot utility')
+        self.argparser = argparse.ArgumentParser(
+            description='Taiga Board Snapshot utility')
         self.main_subparser = self.argparser.add_subparsers()
 
+
+        # Commands
         self.commands = []
         self.commands.append(TaskCommand(self))
         self.commands.append(SnapshotsCommand(self))
@@ -58,7 +61,8 @@ class Configuration(object):
         # TODO ideas for commands/ queries
         # move unfinished issues to the next sprint
         # epics dependency graph
-        # timeline for tasks by user (over the course of time, when are the status changes.)
+        # timeline for tasks by user (over the course of time, when are the
+        # status changes.)
 
         self.client = TaigaClient(self)
 
@@ -66,8 +70,10 @@ class Configuration(object):
         args = self.argparser.parse_args(arguments)
         return args
 
+
 def usage(config, args):
     config.parser.print_help()
+
 
 def main():
     # Read conf

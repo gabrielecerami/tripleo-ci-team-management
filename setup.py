@@ -17,4 +17,4 @@ setup(name='Tripleo CI Taiga Management tool',
               'taigacli=taigacli.taigacli:main',
           ],
       },
-     )
+      )

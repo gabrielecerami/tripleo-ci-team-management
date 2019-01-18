@@ -7,6 +7,7 @@ import texttable
 import subprocess
 from taigacli.exceptions import *
 
+
 class Queries(object):
     log = logging.getLogger('taigacli')
 
@@ -24,14 +25,14 @@ class Queries(object):
     def store_in_graph(self):
         pass
 
-
     def get_latest_timestamp(self):
         query = "select MAX(timestamp) from snapshots;"
         rows = self.storage.query(query)
         return rows[0]['MAX(timestamp)']
 
     def verify_timestamp(self, timestamp):
-        query = "select timestamp from snapshots where timestamp like {};".format(timestamp)
+        query = "select timestamp from snapshots where timestamp like {};".format(
+            timestamp)
         rows = self.storage.query(query)
         if rows:
             return True
@@ -48,8 +49,8 @@ class Queries(object):
             print(table.draw())
         elif output_type == 'pandas':
             df = pandas.DataFrame(rows, columns=rows[0].keys())
-            pandas.set_option('display.max_colwidth',1000)
-            df['timestamp'] = pandas.to_datetime(df['timestamp'],unit='s')
+            pandas.set_option('display.max_colwidth', 1000)
+            df['timestamp'] = pandas.to_datetime(df['timestamp'], unit='s')
             print(df)
 
     def list_snapshots(self):
@@ -59,4 +60,3 @@ class Queries(object):
     def raw(self, query, timestamp=None):
         """ Run Custom SQL Query """
         self.print_query(self.storage.query(query))
-

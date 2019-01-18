@@ -9,6 +9,7 @@ except ImportError:
     logging.error("python bindings for Influxdb not installed")
     pass
 
+
 class DataPoint(object):
 
     def __init__(self, measurement, timestamp, tags, fields):
@@ -26,15 +27,16 @@ class DataPoint(object):
 
         return point_dict
 
+
 class Storage(object):
     log = logging.getLogger('taigacli')
 
     def __init__(self, config):
         self.config = config
         self.timestamp = datetime.datetime.now().isoformat()
-        self.host = config.db_options.get('host','localhost')
+        self.host = config.db_options.get('host', 'localhost')
         self.log.debug(self.host)
-        self.port = config.db_options.get('port','8086')
+        self.port = config.db_options.get('port', '8086')
         self.db_name = config.db_options.get('database', 'test')
         self.client = InfluxDBClient(host=self.host, port=self.port)
         self.client.switch_database(self.db_name)
@@ -45,11 +47,13 @@ class Storage(object):
             self.tags[element_name] = []
             self.fields[element_name] = []
             try:
-                self.tags[element_name] = self.config.db_parameters[element_name]['tags'].split(',')
+                self.tags[element_name] = self.config.db_parameters[
+                    element_name]['tags'].split(',')
             except KeyError:
                 pass
             try:
-                self.fields[element_name] = self.config.db_parameters[element_name]['fields'].split(',')
+                self.fields[element_name] = self.config.db_parameters[
+                    element_name]['fields'].split(',')
             except KeyError:
                 pass
         self.log.debug(pprint.pformat(self.tags))
@@ -57,9 +61,11 @@ class Storage(object):
 
     def query(self, query, date=None):
         if date is None:
-            snapshots = self.client.query('select * from snapshots order by desc limit 1')
+            snapshots = self.client.query(
+                'select * from snapshots order by desc limit 1')
         else:
-            snapshots = self.client.query('select * from snapshots where time < ' + date + ' order by desc limit 1')
+            snapshots = self.client.query(
+                'select * from snapshots where time < ' + date + ' order by desc limit 1')
 
         snapshot = snapshots.get_points()[0]
         timestamp = snapshot['time']
@@ -87,10 +93,11 @@ class Storage(object):
                     except AttributeError:
                         self.log.warning("Attribute not found")
 
-                self.points.append(DataPoint(measurement, self.timestamp, tags, fields).to_dict())
+                self.points.append(
+                    DataPoint(measurement, self.timestamp, tags, fields).to_dict())
 
         self.log.debug(pprint.pformat(self.points))
         self.client.write_points(self.points)
-        snap_info = [{ "measurement": "snapshots", "timestamp" : self.timestamp,
+        snap_info = [{"measurement": "snapshots", "timestamp": self.timestamp,
                       "tags": {}, "fields": {"sprint": snapshot.current_sprint.id}}]
         self.client.write_points(snap_info)
