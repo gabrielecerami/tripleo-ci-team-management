@@ -7,28 +7,18 @@ import texttable
 import subprocess
 from taigacli.exceptions import *
 
-class QueryResult(object):
-    def __init__(self, result_list, measurement, fields_names, tags=None):
-        self.result = result_list
-        self.measurement = measurement
-        self.tags = tags
-        self.fields_names = fields_names
-
-    def __str__(self):
-        results_dict = dict(zip(fields_names, results))
-        return pprint.pformat(results_dict)
-
-
 class Queries(object):
 
     def __init__(self, config):
         self.storage = config.db_storage
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        self.query_methods = {}
-        for method_name, object in dict(methods).items():
+        self.user = {}
+        for method_name, method in dict(methods).items():
             if 'query_' in method_name:
-                self.query_methods[method_name] = object
+                self.user[method_name] = method
 
+    def list_user_queries(self):
+        return self.user.keys()
 
     def store_in_graph(self):
         pass
@@ -69,18 +59,3 @@ class Queries(object):
         """ Run Custom SQL Query """
         self.print_query(self.storage.query(query))
 
-    def query_unfinished_tasks_by_snapshot(self):
-        """ Query for unfinished tasks """
-        query = 'select timestamp,count(ref) from tasks where status_name != "Done" group by timestamp'
-        rows = self.storage.query(query)
-        self.print_query(rows, output_type='pandas')
-
-    def query_us_completion(self, timestamp=None):
-        query = 'select ref, subject, DOD, Design, QE, assigned_users_names from user_stories where "timestamp" like {} and (DOD = "" or Design = "" or QE = "" or assigned_users_names = "[]")'.format(timestamp)
-        rows = self.storage.query(query)
-        self.print_query(rows)
-
-    def query_reviewable_tasks(self, timestamp=None):
-        query = 'select ref, subject, Reviews from tasks where status_name = "Ready for Review" and timestamp like {}'.format(timestamp)
-        rows = self.storage.query(query)
-        self.print_query(rows)

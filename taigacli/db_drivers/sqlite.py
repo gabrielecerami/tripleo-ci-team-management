@@ -3,15 +3,6 @@ import pprint
 import json
 import sqlite3
 
-class Row(object):
-
-    def __init__(self, timestamp, table):
-        self.fields = fields
-
-        self.timestamp = timestamp
-        for value in values:
-            setattr(self, )
-
 
 class Table(object):
 
