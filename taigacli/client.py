@@ -106,6 +106,12 @@ class TaigaClient(object):
                 break
         return sprint
 
+    def get_tasks(self):
+        return self.api.tasks.list(project=self.project.id)
+
+    def get_user_stories(self):
+        return self.project.list_user_stories()
+
     def get_tasks_by_us(self, us_id):
         self._init()
         return self.api.tasks.list(user_story=us_id)
@@ -114,6 +120,10 @@ class TaigaClient(object):
         self._init
         api_path = "epics/{}/related_userstories".format(epic_id)
         return self.raw_api_get(api_path)
+
+    def get_us_by_id(self, us_id):
+        self._init
+        return self.api.user_stories.get(us_id)
 
     def get_epic_attributes(self, epic_id):
         self._init()

@@ -3,8 +3,6 @@ import argparse
 import configparser
 import datetime
 import logging
-import os
-import pickle
 import pprint
 import sys
 from taigacli.db_drivers import *
@@ -14,6 +12,7 @@ from taigacli.exceptions import *
 from taigacli_custom_queries import *
 from taigacli.commands.task import TaskCommand
 from taigacli.commands.snapshots import SnapshotsCommand
+from taigacli.commands.epic import EpicCommand
 
 
 class Configuration(object):
@@ -53,10 +52,13 @@ class Configuration(object):
         self.main_subparser = self.argparser.add_subparsers()
 
 
+        self.client = TaigaClient(self)
+
         # Commands
         self.commands = []
         self.commands.append(TaskCommand(self))
         self.commands.append(SnapshotsCommand(self))
+        self.commands.append(EpicCommand(self))
 
         # TODO ideas for commands/ queries
         # move unfinished issues to the next sprint
@@ -64,7 +66,6 @@ class Configuration(object):
         # timeline for tasks by user (over the course of time, when are the
         # status changes.)
 
-        self.client = TaigaClient(self)
 
     def parse_arguments(self, arguments):
         args = self.argparser.parse_args(arguments)

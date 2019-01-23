@@ -15,12 +15,14 @@ class Snapshot(object):
                 logging.warning(
                     "Fixture file found, loading snapshot from file")
                 snapshot = pickle.load(pickle_file)
-                self.tasks = snapshot.tasks
-                self.user_stories = snapshot.user_stories
+                self.tasks = snapshot['tasks']
+                self.user_stories = snapshot['user_stories']
+                self.epics = snapshot['epics']
         except FileNotFoundError:
             self.pull()
 
     def pull(self):
+
         if self.scope == 'sprint':
             current_sprint = self.client.get_sprint()
             current_sprint.scope = "sprint"
@@ -29,26 +31,31 @@ class Snapshot(object):
             self.tasks = []
 
         elif self.scope == 'project':
-            log.info("Collecting Epics")
-            project_epics = self.client.get_epics()
+            self.log.info("Collecting Epics")
+            self.epics = self.client.get_epics()
             self.user_stories = []
-            for epic in project_epics:
+            for epic in self.epics:
+                self.log.info("Flattening epic #%s", epic['ref'])
                 epic['status_name'] = self.client.epic_statuses[str(epic['status'])]
                 epic['owner_name'] = self.client.users[epic['owner']]
-                epic['assigned_to_name'] = self.client.users.get(epic('assigned_to', ""))
-                # XXX custom attributes ?
-                epic_attributes = self.clients.get_epic_attributes(epic['id'])[
+                epic['assigned_to_name'] = self.client.users.get(epic['assigned_to'], "")
+                epic_attributes = self.client.get_epic_attributes(epic['id'])[
                     'attributes_values'].items()
                 for attribute_id, attribute_value in epic_attributes:
                     attribute_name = self.client.epic_attributes[attribute_id]
-                    setattr(epic, attribute_name, attribute_value)
-                self.log.info("Collecting user stories for epic #{}".format(epic['ref']))
-                self.user_stories += self.client.get_us_by_epic(epic['id'])
+                    epic['attribute_name'] = attribute_value
+                related_us = self.client.get_us_by_epic(epic['id'])
+                epic['user_stories'] = list(map(lambda x:x['user_story'], related_us))
+            self.log.info("Collecting User Stories")
+            self.user_stories = self.client.get_user_stories()
+            self.log.info("Collecting Tasks")
+            self.tasks = self.client.get_tasks()
         else:
-            self.log.error('unrecognized scope')
+            self.log.error('unrecognized snapshot scope: %s', self.scope)
             raise SnapshotException
 
         for user_story in self.user_stories:
+            self.log.info("Flattening User Story #%s", user_story.ref)
             user_story.status_name = self.client.user_story_statuses[
                 str(user_story.status)]
             user_story.owner_name = self.client.users[user_story.owner]
@@ -62,10 +69,12 @@ class Snapshot(object):
                 attribute_name = self.client.user_story_attributes[
                     attribute_id]
                 setattr(user_story, attribute_name, attribute_value)
-            self.log.info("collecting tasks for us #{}".format(us.ref))
-            self.tasks += self.client.get_tasks_by_us(user_story.id)
+                if self.scope == 'sprint':
+                    self.log.info("collecting tasks for us #{}".format(user_story.ref))
+                    self.tasks += self.client.get_tasks_by_us(user_story.id)
 
         for task in self.tasks:
+            self.log.info("Flattening task #%s", task.ref)
             task.status_name = self.client.task_statuses[str(task.status)]
             task.owner_name = self.client.users[task.owner]
             task.assigned_to_name = self.client.users.get(task.assigned_to, "")
@@ -76,8 +85,13 @@ class Snapshot(object):
                 setattr(task, attribute_name, attribute_value)
 
     def dump_pickle(self):
+        # do not dump config
+        snapshot = {}
+        snapshot['epics'] = self.epics
+        snapshot['tasks'] = self.tasks
+        snapshot['user_stories'] = self.user_stories
         with open('fixtures.pik', 'w+b') as pickle_file:
-            pickle.dump(self, pickle_file)
+            pickle.dump(snapshot, pickle_file)
 
     def dump(self):
         # logging.debug(pprint.pformat(self.__dict__))
