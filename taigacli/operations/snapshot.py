@@ -22,6 +22,8 @@ class Snapshot(object):
             self.pull()
 
     def pull(self):
+        self.sprints = self.client.get_sprints()
+        self.users = self.client.get_users()
 
         if self.scope == 'sprint':
             current_sprint = self.client.get_sprint()
@@ -69,9 +71,9 @@ class Snapshot(object):
                 attribute_name = self.client.user_story_attributes[
                     attribute_id]
                 setattr(user_story, attribute_name, attribute_value)
-                if self.scope == 'sprint':
-                    self.log.info("collecting tasks for us #{}".format(user_story.ref))
-                    self.tasks += self.client.get_tasks_by_us(user_story.id)
+            if self.scope == 'sprint':
+                self.log.info("collecting tasks for us #%s", user_story.ref)
+                self.tasks += self.client.get_tasks_by_us(user_story.id)
 
         for task in self.tasks:
             self.log.info("Flattening task #%s", task.ref)
@@ -95,4 +97,4 @@ class Snapshot(object):
 
     def dump(self):
         # logging.debug(pprint.pformat(self.__dict__))
-        self.config.db_storage.dump(self)
+        self.config.db_storage.dump_snapshot(self)

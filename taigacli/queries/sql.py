@@ -14,7 +14,10 @@ class Queries(object):
     def __init__(self, config):
         self.storage = config.db_storage
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        self.team = config.team
         self.user = {}
+        self.date_format = "%Y-%m-%d"
+
         for method_name, method in dict(methods).items():
             if 'query_' in method_name:
                 self.user[method_name] = method
@@ -30,6 +33,18 @@ class Queries(object):
         rows = self.storage.query(query)
         return rows[0]['MAX(timestamp)']
 
+    def get_latest_timestamp_on_sprint(self, sprint_name):
+        query = "select estimated_finish from sprints where name = '{}'".format(sprint_name)
+        rows = self.storage.query(query)
+        estimated_finish = rows[0]['estimated_finish']
+        end_date = datetime.datetime.strptime(sprint.estimated_finish,
+                                                self.date_format).replace(hour=23, minute=59)
+        end_timestamp = end_date.timestamp()
+        query = "select MAX(timestamp) from snapshots where timestamp < {}".format(end_timestamp)
+        rows = self.storage.query(query)
+        return rows['0']['MAX(timestamp)']
+
+
     def verify_timestamp(self, timestamp):
         query = "select timestamp from snapshots where timestamp like {};".format(
             timestamp)
@@ -39,13 +54,14 @@ class Queries(object):
         else:
             return False
 
-    def print_query(self, rows, output_type='table'):
+    def print_query(self, rows, output_type='table', headers=None):
         if output_type == 'table':
             height, width = subprocess.check_output(['stty', 'size']).split()
             table = texttable.Texttable(max_width=int(width))
-            headers = [rows[0].keys()]
-            table.set_cols_dtype(['t'] * len(rows[0].keys()))
-            table.add_rows(headers + rows)
+            if headers == None:
+                headers = rows[0].keys()
+            table.set_cols_dtype(['t'] * len(headers))
+            table.add_rows([headers] + rows)
             print(table.draw())
         elif output_type == 'pandas':
             df = pandas.DataFrame(rows, columns=rows[0].keys())

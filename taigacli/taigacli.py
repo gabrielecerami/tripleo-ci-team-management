@@ -24,6 +24,7 @@ class Configuration(object):
         self.timestamp = datetime.datetime.now().timestamp()
         self.project_slug = parser['project']['slug']
         self.scope = parser['main']['scope']
+        self.team = parser['project']['team'].split(',')
         self.db_driver = parser['main']['db-driver']
         self.db_parameters = {}
         self.db_options = {}

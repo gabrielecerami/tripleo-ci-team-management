@@ -24,7 +24,7 @@ class EpicCommand(object):
     def draw_dep_diagram(self, args):
         epic_ref = args.epic_ref
         snapshot = Snapshot(self.config, scope='project')
-        snapshot.dump_pickle()
+        #snapshot.dump_pickle()
 
         draw_epic = None
         dot = graphviz.Digraph(comment='Epic Dependency Tree')

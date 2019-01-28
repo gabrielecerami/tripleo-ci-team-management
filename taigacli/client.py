@@ -77,6 +77,14 @@ class TaigaClient(object):
 
         self.sprints = self.project.list_milestones()
 
+    def get_sprints(self):
+        self._init()
+        return self.project.list_milestones()
+
+    def get_users(self):
+        self._init()
+        return self.project.members
+
     def raw_api_get(self, api_path):
         self._init()
         headers = {

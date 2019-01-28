@@ -15,7 +15,11 @@ class Table(object):
 
         self.explicit_columns = config.db_parameters[
             self.name]['columns'].split(',')
+        self.use_timestamp = True
         self.implicit_columns = ["timestamp"]
+        if 'no-timestamp' in config.db_parameters[self.name]:
+            self.use_timestamp = False
+            self.implicit_columns = []
         self.columns = self.implicit_columns + self.explicit_columns
         self.quoted_columns = ['"{}"'.format(s) for s in self.columns]
         query_variables = ['?'] * len(self.columns)
@@ -27,7 +31,10 @@ class Table(object):
         self.conn.execute(create_table)
 
     def add_row(self, element):
-        values = [self.timestamp]
+        values = []
+        if self.use_timestamp:
+            values = [self.timestamp]
+
         # self.log.debug("Adding row to table {}".format(self.name))
         for attribute in self.explicit_columns:
             try:
@@ -44,7 +51,7 @@ class Table(object):
         self.rows.append(tuple(values))
 
     def commit(self):
-        insert_row = 'insert into {} values ({})'.format(
+        insert_row = 'insert or replace into {} values ({})'.format(
             self.name, self.values_string)
         # self.log.debug(insert_row)
         self.conn.executemany(insert_row, self.rows)
@@ -76,7 +83,7 @@ class Storage(object):
         cursor = self.conn.execute("select * from sqlite_master")
         # self.log.debug(pprint.pformat(cursor.fetchall()))
 
-    def dump(self, snapshot):
+    def dump_snapshot(self, snapshot):
         for element_name in self.config.main_elements:
             elements_list = getattr(snapshot, element_name)
             table = self.tables[element_name]
@@ -86,11 +93,7 @@ class Storage(object):
 
             table.commit()
 
-            # self.log.debug(pprint.pformat(self.conn.execute("select * from
-            # {}".format(element_name)).fetchall()))
 
-        # insert_row = "insert into snapshots values ({}, {})".format(self.timestamp, snapshot.current_sprint.id)
-        # self.conn.execute(insert_row)
 
     def query(self, query):
         rows = self.conn.execute(query)
