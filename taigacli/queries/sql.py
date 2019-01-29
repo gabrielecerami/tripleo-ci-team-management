@@ -71,7 +71,9 @@ class Queries(object):
 
     def list_snapshots(self):
         query = 'select * from snapshots'
-        self.print_query(self.storage.query(query))
+        rows = self.storage.query(query)
+        if len(rows) > 0:
+            self.print_query(rows)
 
     def raw(self, query, timestamp=None):
         """ Run Custom SQL Query """

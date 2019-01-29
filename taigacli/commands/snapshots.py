@@ -10,11 +10,11 @@ class SnapshotsCommand(object):
         snapshot_parser = config.main_subparser.add_parser(
             'snapshots', help='Handle local snapshots')
         snapshot_subparser = snapshot_parser.add_subparsers()
-        snapshot_click_parser = snapshot_subparser.add_parser(
-            'click', help='Take a snapshot')
-        snapshot_click_parser.add_argument(
+        snapshot_create_parser = snapshot_subparser.add_parser(
+            'create', help='Create a snapshot of the Taiga board')
+        snapshot_create_parser.add_argument(
             '--fixture', dest='fixture', action='store', help='dump snapshot to fixture file')
-        snapshot_click_parser.set_defaults(handler=self.click)
+        snapshot_create_parser.set_defaults(handler=self.create)
         snapshot_list_parser = snapshot_subparser.add_parser(
             'list', help='list stored snapshots')
         snapshot_list_parser.set_defaults(handler=self.list)
@@ -34,7 +34,7 @@ class SnapshotsCommand(object):
     def list(self, args):
         self.config.queries.list_snapshots()
 
-    def click(self, args):
+    def create(self, args):
         snapper = Snapshot(self.config)
 
         if args.fixture:

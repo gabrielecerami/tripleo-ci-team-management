@@ -6,7 +6,7 @@ import json
 try:
     from influxdb import InfluxDBClient
 except ImportError:
-    logging.error("python bindings for Influxdb not installed")
+    logging.warning("python bindings for Influxdb not installed")
     pass
 
 
