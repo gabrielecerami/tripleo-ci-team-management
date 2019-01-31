@@ -43,10 +43,21 @@ to be
 Installation
 ============
 
-git clone https://github.com/
-python3 -m virtualenv -p python3 taigacli-venv
-cd taigacli-venv
-python setup.py develop
+  ```
+  git clone https://github.com/gabrielecerami/tripleo-ci-team-management
+  python3 -m virtualenv -p python3 taigacli-venv
+  source taigacli-venv/bin/activate
+  cd tripleo-ci-team-management
+  python3 setup.py develop
+  ```
+
+Authentication
+==============
+
+  ```
+  export TAIGA_USERNAME='my_taiga_user@example.com'
+  export TAIGA_PASSWORD='my_taiga_password'
+  ```
 
 Usage
 =====

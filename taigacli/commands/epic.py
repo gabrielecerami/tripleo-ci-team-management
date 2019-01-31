@@ -13,7 +13,7 @@ class EpicCommand(object):
             'epic', help='Handle epic operations')
         epic_subparser = epic_parser.add_subparsers()
         epic_diagram_parser = epic_subparser.add_parser(
-            'diagram', help='move tasks between us')
+            'diagram', help='Show epic diagram')
         epic_diagram_parser.add_argument(
             'epic_ref', action='store', help='epic to show diagram')
         epic_diagram_parser.set_defaults(handler=self.draw_dep_diagram)

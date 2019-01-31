@@ -10,7 +10,7 @@ class TaskCommand(object):
         task_move_parser.add_argument(
             'task_ref', action='store', help='task to move')
         task_move_parser.add_argument(
-            'us_ref', action='store', help='user story to move to')
+            'us_ref', action='store', help='user story to move the task to')
         task_move_parser.set_defaults(handler=self.noop)
 
     def noop(self, args):

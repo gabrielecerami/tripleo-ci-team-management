@@ -11,6 +11,7 @@ setup(name='Tripleo CI Taiga Management tool',
           'pandas',
           'texttable',
           'python-taiga',
+          'graphviz',
       ],
       entry_points={
           'console_scripts': [

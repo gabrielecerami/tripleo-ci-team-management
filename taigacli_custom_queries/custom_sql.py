@@ -1,6 +1,6 @@
 import json
 from taigacli.queries.sql import Queries
-
+from operator import itemgetter
 
 class CustomQueries(Queries):
 
@@ -101,3 +101,27 @@ class CustomQueries(Queries):
     #def query_unfinished_tasks_
     # by User do they have US that are not complete ?
     # How many tasks and user stories are not complete, group by team AND group by user, per week in the sprint AND at the sprint end.
+
+    def query_assigned_us_by_user(self, timestamp=None):
+        timestamp = self.get_latest_timestamp()
+        sprint_name = None
+        args = {}
+        if 'timestamp' in args:
+            timestamp = args['timestamp']
+        if 'sprint-name' in args:
+            sprint_name = args['sprint-name']
+            self.get_latest_timestamp_on_sprint(sprint_name)
+
+        values = []
+        for user_name in self.team:
+            query = 'select COUNT(distinct(ref)) as assigned_us from user_stories where timestamp like {} and assigned_users_names like "%{}%"'.format(timestamp, user_name)
+            rows = self.storage.query(query)
+            assigned_us = rows[0]['assigned_us']
+            query = 'select COUNT(distinct(ref)) as assigned_tasks from tasks where timestamp like {} and assigned_to_name like "%{}%"'.format(timestamp, user_name)
+            rows = self.storage.query(query)
+            assigned_tasks = rows[0]['assigned_tasks']
+
+            values.append([timestamp, user_name, assigned_us, assigned_tasks])
+
+        self.print_query(sorted(values, key=itemgetter(2)),headers=['timestamp', 'user', 'assigned us', 'assigned tasks'])
+

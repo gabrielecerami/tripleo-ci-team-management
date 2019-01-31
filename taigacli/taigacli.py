@@ -57,9 +57,9 @@ class Configuration(object):
 
         # Commands
         self.commands = []
+        self.commands.append(EpicCommand(self))
         self.commands.append(TaskCommand(self))
         self.commands.append(SnapshotsCommand(self))
-        self.commands.append(EpicCommand(self))
 
         # TODO ideas for commands/ queries
         # move unfinished issues to the next sprint
