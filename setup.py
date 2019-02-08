@@ -12,6 +12,8 @@ setup(name='Tripleo CI Taiga Management tool',
           'texttable',
           'python-taiga',
           'graphviz',
+          'sqlalchemy',
+          'sqlalchemy_utils',
       ],
       entry_points={
           'console_scripts': [

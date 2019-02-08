@@ -5,14 +5,13 @@ import datetime
 import logging
 import pprint
 import sys
-from taigacli.db_drivers import *
-from taigacli.queries import *
 from taigacli.client import TaigaClient
 from taigacli.exceptions import *
 from taigacli_custom_queries import *
 from taigacli.commands.task import TaskCommand
 from taigacli.commands.snapshots import SnapshotsCommand
 from taigacli.commands.epic import EpicCommand
+
 
 
 class Configuration(object):
@@ -25,28 +24,7 @@ class Configuration(object):
         self.project_slug = parser['project']['slug']
         self.scope = parser['main']['scope']
         self.team = parser['project']['team'].split(',')
-        self.db_driver = parser['main']['db-driver']
-        self.db_parameters = {}
-        self.db_options = {}
-        self.main_elements = parser['project']['elements'].split(',')
-        for element in self.main_elements:
-            self.db_parameters[element] = parser[
-                element + ':' + self.db_driver]
-        try:
-            self.db_options = parser['db:' + self.db_driver]
-        except KeyError:
-            pass
-        if self.db_driver == "influxdb":
-            self.db_storage = influxdb.Storage(self)
-        elif self.db_driver == "sqlite":
-            self.db_storage = sqlite.Storage(self)
-            self.queries = sql.Queries(self)
-            try:
-                self.custom_queries = custom_sql.CustomQueries(self)
-            except:
-                raise
-        else:
-            raise SnapshotException("DB driver not supported")
+        self.db_uri = parser['db']['uri']
 
         self.argparser = argparse.ArgumentParser(
             description='Taiga Board Snapshot utility')

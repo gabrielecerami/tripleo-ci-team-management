@@ -1,5 +1,7 @@
 import logging
 from taigacli.operations.snapshot import Snapshot
+from taigacli.db.queries import Queries
+from taigacli_custom_queries.queries import CustomQueries
 
 
 class SnapshotsCommand(object):
@@ -32,7 +34,8 @@ class SnapshotsCommand(object):
             '--timestamp', dest='timestamp', action='store', help='specify timestamp [default: latest]')
 
     def list(self, args):
-        self.config.queries.list_snapshots()
+        queries = Queries(self.config)
+        queries.list_snapshots()
 
     def create(self, args):
         snapper = Snapshot(self.config)
@@ -43,8 +46,8 @@ class SnapshotsCommand(object):
             snapper.dump()
 
     def run_queries(self, args):
-        queries = self.config.queries
-        custom_queries = self.config.custom_queries
+        queries = Queries(self.config)
+        custom_queries = CustomQueries(self.config)
         if args.timestamp:
             if queries.verify_timestamp(args.timestamp):
                 timestamp = args.timestamp
@@ -57,9 +60,9 @@ class SnapshotsCommand(object):
         if args.raw_query:
             queries.raw(args.raw_query)
         elif args.query_name:
-            custom_queries.user[args.query_name](timestamp=timestamp)
+            custom_queries.custom[args.query_name](timestamp=timestamp)
         elif args.list_queries:
-            for index, name in enumerate(self.config.custom_queries.user.keys(), 1):
+            for index, name in enumerate(custom_queries.custom.keys(), 1):
                 print("{}. {}".format(index, name))
         else:
             self.log.warning("No queries specified")

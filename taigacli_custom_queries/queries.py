@@ -1,0 +1,156 @@
+import json
+from taigacli.db.queries import Queries
+from taigacli.db.models import Task, UserStory
+from sqlalchemy import or_, distinct, func
+from operator import itemgetter
+
+class CustomQueries(Queries):
+
+    def query_us_completion(self, timestamp=None):
+
+        results = self.client.session.query(
+            UserStory.ref,
+            UserStory.description,
+            UserStory.subject,
+            UserStory.DOD,
+            UserStory.Design,
+            UserStory.QE,
+            UserStory.assigned_users_names).\
+            filter_by(timestamp = timestamp).\
+            filter(or_(
+                UserStory.description == None,
+                UserStory.DOD == None,
+                UserStory.Design == None,
+                UserStory.QE == None,
+                UserStory.assigned_users_names == None,
+            )).all()
+        self.print_query(results)
+
+    def query_reviewable_tasks(self, timestamp=None):
+        results = self.client.session.query(Task.ref, Task.subject, Task.Reviews).filter_by(status_name = "Ready for Review", timestamp = timestamp).all()
+        self.print_query(results)
+
+    def query_unfinished_us(self, timestamp=None):
+        timestamp = self.get_latest_timestamp()
+        sprint_name = None
+        args = {}
+        if 'timestamp' in args:
+            timestamp = args['timestamp']
+        if 'sprint-name' in args:
+            sprint_name = args['sprint-name']
+            self.get_latest_timestamp_on_sprint(sprint_name)
+
+        result = self.client.session.query(
+            UserStory.timestamp,
+            func.count(distinct(UserStory.ref)),
+            func.count(distinct(Task.ref))
+        ).\
+            filter(
+                UserStory.timestamp == timestamp,
+                UserStory.status_name != "Done",
+                Task.timestamp == timestamp,
+                Task.status_name != "Done"
+            ).\
+            one()
+        rows = [result]
+
+        self.print_table(rows,headers=['timestamp', 'unfinished us', 'unfinished tasks'])
+
+    def query_unfinished_us_by_user(self, timestamp=None):
+        timestamp = self.get_latest_timestamp()
+        sprint_name = None
+        args = {}
+        if 'timestamp' in args:
+            timestamp = args['timestamp']
+        if 'sprint-name' in args:
+            sprint_name = args['sprint-name']
+            self.get_latest_timestamp_on_sprint(sprint_name)
+
+        values = []
+        for user_name in self.team:
+            result = self.client.session.query(
+                func.count(distinct(UserStory.ref)),
+            ).\
+                filter(
+                    UserStory.timestamp == timestamp,
+                    UserStory.status_name != "Done",
+                    UserStory.assigned_users_names.like(["%" + user_name + "%"]),
+                ).\
+                one()
+            unfinished_us = result[0]
+            result = self.client.session.query(
+                func.count(distinct(Task.ref))
+            ).\
+                filter(
+                    Task.timestamp == timestamp,
+                    Task.status_name != "Done",
+                    Task.assigned_to_name.like("%" + user_name + "%")
+                ).\
+                one()
+            unfinished_tasks = result[0]
+
+            values.append([timestamp, user_name, unfinished_us, unfinished_tasks])
+        self.print_table(values,headers=['timestamp', 'user', 'unfinished us', 'unfinished tasks'])
+
+
+    #def query_unfinished_tasks_
+    # by User do they have US that are not complete ?
+    # How many tasks and user stories are not complete, group by team AND group by user, per week in the sprint AND at the sprint end.
+
+    def query_assigned_us_by_user(self, timestamp=None):
+        timestamp = self.get_latest_timestamp()
+        sprint_name = None
+        args = {}
+        if 'timestamp' in args:
+            timestamp = args['timestamp']
+        if 'sprint-name' in args:
+            sprint_name = args['sprint-name']
+            self.get_latest_timestamp_on_sprint(sprint_name)
+
+        values = []
+
+        result = self.client.session.query(
+            func.count(distinct(UserStory.ref)),
+        ).\
+            filter(
+                UserStory.timestamp == timestamp,
+                UserStory.assigned_users_names.like([]),
+            ).\
+            one()
+        assigned_us = result[0]
+        result = self.client.session.query(
+            func.count(distinct(Task.ref))
+        ).\
+            filter(
+                Task.timestamp == timestamp,
+                Task.assigned_to_name.is_(None)
+            ).\
+        one()
+
+        assigned_tasks = result[0]
+        values.append([timestamp, 'unassigned', assigned_us, assigned_tasks])
+
+        for user_name in self.team:
+            result = self.client.session.query(
+                func.count(distinct(UserStory.ref)),
+            ).\
+                filter(
+                    UserStory.timestamp == timestamp,
+                    UserStory.assigned_users_names.like(["%" + user_name + "%"]),
+                ).\
+                one()
+            assigned_us = result[0]
+            result = self.client.session.query(
+                func.count(distinct(Task.ref))
+            ).\
+                filter(
+                    Task.timestamp == timestamp,
+                    Task.assigned_to_name.like("%" + user_name + "%")
+                ).\
+                one()
+            assigned_tasks = result[0]
+
+            values.append([timestamp, user_name, assigned_us, assigned_tasks])
+
+        self.print_table(sorted(values, key=itemgetter(2)),headers=['timestamp', 'user', 'assigned us', 'assigned tasks'])
+

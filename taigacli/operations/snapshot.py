@@ -1,6 +1,10 @@
+import datetime
 import logging
 import pickle
+import pprint
+import json
 from taigacli.exceptions import *
+from taigacli.db.client import Client as DBClient
 
 
 class Snapshot(object):
@@ -9,6 +13,7 @@ class Snapshot(object):
     def __init__(self, config, scope='sprint'):
         self.config = config
         self.client = config.client
+        self.dbclient = DBClient(self.config)
         self.scope = scope
         try:
             with open('fixtures.pik', 'rb') as pickle_file:
@@ -18,25 +23,33 @@ class Snapshot(object):
                 self.tasks = snapshot['tasks']
                 self.user_stories = snapshot['user_stories']
                 self.epics = snapshot['epics']
+                self.sprints = snapshot['sprints']
+                self.users = snapshot['users']
+                self.scope = snapshot['scope']
+                self.timestamp = snapshot['timestamp']
+                self.sprint_id = snapshot['sprint_id']
         except FileNotFoundError:
             self.pull()
 
     def pull(self):
         self.sprints = self.client.get_sprints()
         self.users = self.client.get_users()
+        self.timestamp = datetime.datetime.now()
 
         if self.scope == 'sprint':
+            self.epics = None
             current_sprint = self.client.get_sprint()
-            current_sprint.scope = "sprint"
-            self.snapshots = [current_sprint]
-            self.user_stories = current_sprint.user_stories
+            self.sprint_id = current_sprint.id
+            self.user_stories = self.client.get_us_by_sprint(current_sprint)
             self.tasks = []
 
         elif self.scope == 'project':
             self.log.info("Collecting Epics")
+            self.sprint_id = None
             self.epics = self.client.get_epics()
             self.user_stories = []
             for epic in self.epics:
+                epic.timestamp = self.timestamp
                 self.log.info("Flattening epic #%s", epic['ref'])
                 epic['status_name'] = self.client.epic_statuses[str(epic['status'])]
                 epic['owner_name'] = self.client.users[epic['owner']]
@@ -57,6 +70,7 @@ class Snapshot(object):
             raise SnapshotException
 
         for user_story in self.user_stories:
+            user_story.timestamp = self.timestamp
             self.log.info("Flattening User Story #%s", user_story.ref)
             user_story.status_name = self.client.user_story_statuses[
                 str(user_story.status)]
@@ -76,6 +90,7 @@ class Snapshot(object):
                 self.tasks += self.client.get_tasks_by_us(user_story.id)
 
         for task in self.tasks:
+            task.timestamp = self.timestamp
             self.log.info("Flattening task #%s", task.ref)
             task.status_name = self.client.task_statuses[str(task.status)]
             task.owner_name = self.client.users[task.owner]
@@ -92,9 +107,14 @@ class Snapshot(object):
         snapshot['epics'] = self.epics
         snapshot['tasks'] = self.tasks
         snapshot['user_stories'] = self.user_stories
+        snapshot['sprints'] = self.sprints
+        snapshot['users'] = self.users
+        snapshot['scope'] = self.scope
+        snapshot['timestamp'] = self.timestamp
+        snapshot['sprint_id'] = self.sprint_id
         with open('fixtures.pik', 'w+b') as pickle_file:
             pickle.dump(snapshot, pickle_file)
 
     def dump(self):
-        # logging.debug(pprint.pformat(self.__dict__))
-        self.config.db_storage.dump_snapshot(self)
+        self.log.debug(pprint.pformat(self.__dict__))
+        self.dbclient.dump_snapshot(self)

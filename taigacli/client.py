@@ -76,10 +76,17 @@ class TaigaClient(object):
             self.users[member.id] = member.username
 
         self.sprints = self.project.list_milestones()
+        # Convert dates in python datetime objects for sprints
+        for sprint in self.sprints:
+            sprint.estimated_start = datetime.datetime.strptime(sprint.estimated_start,
+                                                    self.date_format)
+            sprint.estimated_finish = datetime.datetime.strptime(sprint.estimated_finish,
+                                                  self.date_format).replace(hour=23, minute=59)
+
 
     def get_sprints(self):
         self._init()
-        return self.project.list_milestones()
+        return self.sprints
 
     def get_users(self):
         self._init()
@@ -103,15 +110,9 @@ class TaigaClient(object):
     def get_sprint(self, date=datetime.datetime.today()):
         self._init()
         for sprint in self.sprints:
-            start_date = datetime.datetime.strptime(sprint.estimated_start,
-                                                    self.date_format)
-            end_date = datetime.datetime.strptime(sprint.estimated_finish,
-                                                  self.date_format).replace(hour=23, minute=59)
-            self.log.debug(pprint.pformat(date))
-            self.log.debug(pprint.pformat(start_date))
-            self.log.debug(pprint.pformat(end_date))
-            if date <= end_date and date >= start_date:
+            if date <= sprint.estimated_finish and date >= sprint.estimated_start:
                 break
+
         return sprint
 
     def get_tasks(self):
@@ -120,9 +121,21 @@ class TaigaClient(object):
     def get_user_stories(self):
         return self.project.list_user_stories()
 
+    def get_us_by_sprint(self, sprint):
+        self._init()
+        response = []
+        for fake_us in sprint.user_stories:
+            response.append(self.project.get_userstory_by_ref(fake_us.ref))
+
+        return response
+
     def get_tasks_by_us(self, us_id):
         self._init()
-        return self.api.tasks.list(user_story=us_id)
+        response = []
+        for fake_task in self.api.tasks.list(user_story=us_id):
+            response.append(self.project.get_task_by_ref(fake_task.ref))
+
+        return response
 
     def get_us_by_epic(self, epic_id):
         self._init
