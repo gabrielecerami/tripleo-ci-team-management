@@ -8,12 +8,11 @@ setup(name='Tripleo CI Taiga Management tool',
       author_email='gcerami@redhat.com',
       packages=['taigacli', 'taigacli_custom_queries'],
       install_requires=[
-          'pandas',
           'texttable',
-          'python-taiga',
           'graphviz',
           'sqlalchemy',
           'sqlalchemy_utils',
+          'python-taiga',
       ],
       entry_points={
           'console_scripts': [

@@ -1,7 +1,6 @@
 import datetime
 import inspect
 import logging
-import pandas
 import pprint
 import texttable
 import subprocess
@@ -98,12 +97,6 @@ class Queries(object):
                     row.append(getattr(record, header))
                 rows.append(row)
         self.print_table(rows, headers=headers, title=title)
-        # TODO: is pandas neeeded at all ?
-        #elif output_type == 'pandas':
-        #    df = pandas.DataFrame(rows, columns=rows[0].keys())
-        #    pandas.set_option('display.max_colwidth', 1000)
-        #    df['timestamp'] = pandas.to_datetime(df['timestamp'], unit='s')
-        #    print(df)
 
     def list_snapshots(self):
         results = self.client.session.query(Snapshot).all()

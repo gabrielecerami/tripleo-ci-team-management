@@ -158,3 +158,37 @@ class CustomQueries(Queries):
 
         self.print_table(sorted(values, key=itemgetter(2)),headers=['timestamp', 'user', 'assigned us', 'assigned tasks'])
 
+    def query_stories_tasks_of_users(self, **kwargs):
+        ''' returns the refIds of assigned user stories/tasks of user(s)
+        params: user
+        '''
+        timestamp = kwargs['timestamp']
+        try:
+            user = kwargs['user']
+            user_list = user.split(',')
+        except:
+            user_list = self.team
+
+        values = []
+
+        for user_name in user_list:
+            result = self.client.session.query(
+                distinct(UserStory.ref)
+            ).\
+                filter(
+                    UserStory.timestamp == timestamp,
+                    UserStory.assigned_users_names.like(["%" + user_name + "%"]),
+                ).all()
+            assigned_us = [ ref for ref, in result ]
+            result = self.client.session.query(
+                distinct(Task.ref)
+            ).\
+                filter(
+                    Task.timestamp == timestamp,
+                    Task.assigned_to_name.like("%" + user_name + "%")
+                ).all()
+            assigned_tasks = [ ref for ref, in result ]
+            values.append([timestamp, user_name, assigned_us, assigned_tasks])
+
+        self.print_table(values,headers=['timestamp', 'user', 'assigned us', 'assigned tasks'])
+

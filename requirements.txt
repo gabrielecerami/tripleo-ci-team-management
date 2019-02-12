@@ -1,4 +1,5 @@
-pandas
-sqlite3
-taiga
+texttable
 graphviz
+sqlalchemy
+sqlalchemy_utils
+python-taiga
