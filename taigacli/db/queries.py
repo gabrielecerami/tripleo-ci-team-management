@@ -27,7 +27,12 @@ class Queries(object):
                 self.custom[method_name] = method
 
     def list_user_queries(self):
-        return self.user.keys()
+        values = []
+        query_id = 1
+        for method_name, method in self.custom.items():
+            values.append([query_id, method_name, method.__doc__])
+            query_id += 1
+        self.print_table(values, headers=['id', 'name', 'doc'])
 
     def store_in_graph(self):
         pass

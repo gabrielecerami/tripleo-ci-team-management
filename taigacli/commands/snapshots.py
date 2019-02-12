@@ -81,7 +81,6 @@ class SnapshotsCommand(object):
         elif args.query_name:
             custom_queries.custom[args.query_name](**kwargs)
         elif args.list_queries:
-            for index, name in enumerate(custom_queries.custom.keys(), 1):
-                print("{}. {}".format(index, name))
+            custom_queries.list_user_queries()
         else:
             self.log.warning("No queries specified")

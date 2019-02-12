@@ -7,6 +7,10 @@ from operator import itemgetter
 class CustomQueries(Queries):
 
     def query_us_completion(self, **kwargs):
+        """ Returns the list of use stories that are missing critical fields
+        params: None
+        """
+
         timestamp = kwargs['timestamp']
 
         results = self.client.session.query(
@@ -28,11 +32,18 @@ class CustomQueries(Queries):
         self.print_query(results)
 
     def query_reviewable_tasks(self, **kwargs):
+        ''' returns the tasks that are in Ready For Review state
+        params: None
+
+        '''
         timestamp = kwargs['timestamp']
         results = self.client.session.query(Task.ref, Task.subject, Task.Reviews).filter_by(status_name = "Ready for Review", timestamp = timestamp).all()
         self.print_query(results)
 
     def query_unfinished_us(self, **kwargs):
+        ''' return an aggregate of user stories and tasks that are not in Done state
+        params: None
+        '''
         timestamp = kwargs['timestamp']
 
         result = self.client.session.query(
@@ -52,6 +63,10 @@ class CustomQueries(Queries):
         self.print_table(rows,headers=['timestamp', 'unfinished us', 'unfinished tasks'])
 
     def query_unfinished_us_by_user(self, **kwargs):
+        ''' returns the number of tasks and user stories that are not in Done state
+        grouped by users
+        params: user - limit to a specific user
+        '''
         timestamp = kwargs['timestamp']
         users = self.team
         try:
@@ -91,6 +106,9 @@ class CustomQueries(Queries):
     # How many tasks and user stories are not complete, group by team AND group by user, per week in the sprint AND at the sprint end.
 
     def query_assigned_us_by_user(self, **kwargs):
+        ''' returns the list of assigned user stories grouped by user
+        params: None
+        '''
         timestamp = kwargs['timestamp']
 
         values = []
