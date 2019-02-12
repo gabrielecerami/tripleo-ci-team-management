@@ -6,7 +6,8 @@ from operator import itemgetter
 
 class CustomQueries(Queries):
 
-    def query_us_completion(self, timestamp=None):
+    def query_us_completion(self, **kwargs):
+        timestamp = kwargs['timestamp']
 
         results = self.client.session.query(
             UserStory.ref,
@@ -26,19 +27,13 @@ class CustomQueries(Queries):
             )).all()
         self.print_query(results)
 
-    def query_reviewable_tasks(self, timestamp=None):
+    def query_reviewable_tasks(self, **kwargs):
+        timestamp = kwargs['timestamp']
         results = self.client.session.query(Task.ref, Task.subject, Task.Reviews).filter_by(status_name = "Ready for Review", timestamp = timestamp).all()
         self.print_query(results)
 
-    def query_unfinished_us(self, timestamp=None):
-        timestamp = self.get_latest_timestamp()
-        sprint_name = None
-        args = {}
-        if 'timestamp' in args:
-            timestamp = args['timestamp']
-        if 'sprint-name' in args:
-            sprint_name = args['sprint-name']
-            self.get_latest_timestamp_on_sprint(sprint_name)
+    def query_unfinished_us(self, **kwargs):
+        timestamp = kwargs['timestamp']
 
         result = self.client.session.query(
             UserStory.timestamp,
@@ -56,18 +51,16 @@ class CustomQueries(Queries):
 
         self.print_table(rows,headers=['timestamp', 'unfinished us', 'unfinished tasks'])
 
-    def query_unfinished_us_by_user(self, timestamp=None):
-        timestamp = self.get_latest_timestamp()
-        sprint_name = None
-        args = {}
-        if 'timestamp' in args:
-            timestamp = args['timestamp']
-        if 'sprint-name' in args:
-            sprint_name = args['sprint-name']
-            self.get_latest_timestamp_on_sprint(sprint_name)
+    def query_unfinished_us_by_user(self, **kwargs):
+        timestamp = kwargs['timestamp']
+        users = self.team
+        try:
+            users = [kwargs['user']]
+        except KeyError:
+            users = self.team
 
         values = []
-        for user_name in self.team:
+        for user_name in users:
             result = self.client.session.query(
                 func.count(distinct(UserStory.ref)),
             ).\
@@ -97,15 +90,8 @@ class CustomQueries(Queries):
     # by User do they have US that are not complete ?
     # How many tasks and user stories are not complete, group by team AND group by user, per week in the sprint AND at the sprint end.
 
-    def query_assigned_us_by_user(self, timestamp=None):
-        timestamp = self.get_latest_timestamp()
-        sprint_name = None
-        args = {}
-        if 'timestamp' in args:
-            timestamp = args['timestamp']
-        if 'sprint-name' in args:
-            sprint_name = args['sprint-name']
-            self.get_latest_timestamp_on_sprint(sprint_name)
+    def query_assigned_us_by_user(self, **kwargs):
+        timestamp = kwargs['timestamp']
 
         values = []
 

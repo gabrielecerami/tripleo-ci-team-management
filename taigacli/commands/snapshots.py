@@ -31,7 +31,12 @@ class SnapshotsCommand(object):
         query_parser.add_argument(
             '--list', dest='list_queries', action='store_true', help='list saved query')
         query_parser.add_argument(
+            '--query-args', action='append', help='pass generic argument to the query'
+        )
+        query_parser.add_argument(
             '--timestamp', dest='timestamp', action='store', help='specify timestamp [default: latest]')
+        query_parser.add_argument(
+            '--sprint-name', action='store', help='specify sprint name [default: latest]')
 
     def list(self, args):
         queries = Queries(self.config)
@@ -48,19 +53,33 @@ class SnapshotsCommand(object):
     def run_queries(self, args):
         queries = Queries(self.config)
         custom_queries = CustomQueries(self.config)
+        kwargs = {}
+        if args.query_args:
+            for qargs in args.query_args:
+                key, value = qargs.split('=')
+                kwargs[key] = value
+
+
         if args.timestamp:
             if queries.verify_timestamp(args.timestamp):
-                timestamp = args.timestamp
+                kwargs['timestamp'] = args.timestamp
             else:
                 self.log.error(
                     "Timestamp {} not in database".format(args.timestamp))
                 return
         else:
-            timestamp = queries.get_latest_timestamp()
+            if args.sprint_name:
+                kwargs['timestamp'] = queries.get_latest_timestamp_on_sprint(args.sprint_name)
+                if kwargs['timestamp'] is None:
+                    self.log.error("No snapshots for sprint '{}'".format(args.sprint_name))
+                    return
+            else:
+                kwargs['timestamp'] = queries.get_latest_timestamp()
+
         if args.raw_query:
             queries.raw(args.raw_query)
         elif args.query_name:
-            custom_queries.custom[args.query_name](timestamp=timestamp)
+            custom_queries.custom[args.query_name](**kwargs)
         elif args.list_queries:
             for index, name in enumerate(custom_queries.custom.keys(), 1):
                 print("{}. {}".format(index, name))

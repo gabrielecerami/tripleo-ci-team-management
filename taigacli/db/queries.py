@@ -8,7 +8,7 @@ import subprocess
 from taigacli.exceptions import *
 from sqlalchemy import func
 from taigacli.db.client import Client
-from taigacli.db.models import Snapshot
+from taigacli.db.models import Snapshot, Sprint
 
 
 class Queries(object):
@@ -37,15 +37,21 @@ class Queries(object):
         return result[0]
 
     def get_latest_timestamp_on_sprint(self, sprint_name):
-        query = "select estimated_finish from sprints where name = '{}'".format(sprint_name)
-        rows = self.storage.query(query)
-        estimated_finish = rows[0]['estimated_finish']
-        end_date = datetime.datetime.strptime(sprint.estimated_finish,
-                                                self.date_format).replace(hour=23, minute=59)
-        end_timestamp = end_date.timestamp()
-        query = "select MAX(timestamp) from snapshots where timestamp < {}".format(end_timestamp)
-        rows = self.storage.query(query)
-        return rows['0']['MAX(timestamp)']
+        result = self.client.session.query(Sprint).\
+            filter_by(
+                name = sprint_name
+            ).one()
+
+        estimated_finish = datetime.datetime.combine(result.estimated_finish, datetime.time(hour=23, minute=59))
+        sprint_id = result.id
+
+        result = self.client.session.query(func.max(Snapshot.timestamp)).\
+            filter(
+                Snapshot.timestamp < estimated_finish,
+                Snapshot.sprint_id == sprint_id
+                   ).\
+            one()
+        return result[0]
 
     def verify_timestamp(self, timestamp):
         try:
