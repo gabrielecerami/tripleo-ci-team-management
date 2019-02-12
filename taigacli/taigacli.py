@@ -11,6 +11,8 @@ from taigacli_custom_queries import *
 from taigacli.commands.task import TaskCommand
 from taigacli.commands.snapshots import SnapshotsCommand
 from taigacli.commands.epic import EpicCommand
+from taigacli.commands.tools import ToolsCommand
+from taigacli.db.client import Client as DBClient
 
 
 
@@ -32,12 +34,14 @@ class Configuration(object):
 
 
         self.client = TaigaClient(self)
+        self.db_client = DBClient(self)
 
         # Commands
         self.commands = []
         self.commands.append(EpicCommand(self))
         self.commands.append(TaskCommand(self))
         self.commands.append(SnapshotsCommand(self))
+        self.commands.append(ToolsCommand(self))
 
         # TODO ideas for commands/ queries
         # move unfinished issues to the next sprint
