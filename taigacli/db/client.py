@@ -26,12 +26,14 @@ class Client():
             table_name = model_class.__table__.name
             self.log.debug(table_name)
             if table_name == 'snapshots':
-                self.log.debug("snap")
                 db_snapshot = model_class()
                 db_snapshot.timestamp = snapshot.timestamp
                 db_snapshot.sprint_id = snapshot.sprint_id
                 db_snapshot.scope = snapshot.scope
-                self.session.add(db_snapshot)
+                instance = self.session.query(model_class).filter_by(timestamp = db_element.timestamp).one_or_none()
+                if not instance:
+                    self.log.debug('%s id %d added to db', str(model_class), db_element.timestamp)
+                    self.session.add(db_snapshot)
             else:
                 category = getattr(snapshot, table_name)
                 for element in category:
@@ -40,16 +42,23 @@ class Client():
                         value = None
                         try:
                             value = getattr(element, column.name)
-                        except AttributeError as e:
- #                           self.log.debug(e)
+                        except AttributeError:
                             try:
                                 value = element[column.name]
-                            except (KeyError,TypeError) as e:
-                                #self.log.debug(e)
+                            except (KeyError, TypeError):
                                 self.log.warning("%s - %s: value for %s not found, assuming NULL", table_name, str(element), column.name)
 
                         setattr(db_element, column.name, value)
+
+                    if hasattr(db_element, 'timestamp'):
+                        instance = self.session.query(model_class).filter_by(timestamp = db_element.timestamp, id = db_element.id).one_or_none()
+                    else:
+                        instance = self.session.query(model_class).filter_by(id = db_element.id).one_or_none()
+                    if not instance:
+                        self.log.debug('%s id %d added to db', str(model_class), db_element.id)
                         self.session.add(db_element)
+                    else:
+                        self.log.debug('%s id %d exists', str(model_class), db_element.id)
 
         self.session.commit()
 
