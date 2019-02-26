@@ -65,7 +65,11 @@ class Queries(object):
             return False
 
     def print_table(self, rows, headers=None, title=None):
-        height, width = subprocess.check_output(['stty', 'size']).split()
+        try:
+            _, width = subprocess.check_output(['stty', 'size']).split()
+        except subprocess.CalledProcessError:
+            width = 190
+
         table = texttable.Texttable(max_width=int(width))
         content = []
         if headers:
